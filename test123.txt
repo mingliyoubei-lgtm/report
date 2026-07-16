@@ -1,0 +1,220 @@
+from docx import Document
+from docx.shared import Pt, Inches, Cm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn, nsdecls
+from docx.oxml import parse_xml
+import os
+OUT = os.environ.get("TEMP", "C:/temp") + "/Nancy_Resume_PR.docx"
+def sf(rn, sz=9.5, bd=False, clr=None):
+    if clr is None: clr = RGBColor(0x33,0x33,0x33)
+    rn.font.name = "Calibri"; rn.font.size = Pt(sz); rn.font.bold = bd; rn.font.color.rgb = clr
+    rpr = rn._element.get_or_add_rPr()
+    rf = rpr.find(qn("w:rFonts"))
+    if rf is None:
+        rf = parse_xml('<w:rFonts %s />' % nsdecls("w"))
+        rpr.insert(0, rf)
+    rf.set(qn("w:ascii"), "Calibri"); rf.set(qn("w:hAnsi"), "Calibri"); rf.set(qn("w:eastAsia"), "Microsoft YaHei")
+def bg(c, cl):
+    tcPr = c._tc.get_or_add_tcPr()
+    tcPr.append(parse_xml('<w:shd %s w:fill="%s" w:val="clear"/>' % (nsdecls("w"), cl)))
+def mg(c, t=15, b=15, s=80, e=80):
+    tcPr = c._tc.get_or_add_tcPr()
+    tcPr.append(parse_xml('<w:tcMar %s><w:top w:w="%d" w:type="dxa"/><w:bottom w:w="%d" w:type="dxa"/><w:start w:w="%d" w:type="dxa"/><w:end w:w="%d" w:type="dxa"/></w:tcMar>' % (nsdecls("w"), t, b, s, e)))
+def clr_cell(c):
+    p = c.paragraphs[0]
+    for r in list(p.runs): r._element.getparent().remove(r._element)
+    for ch in list(p._element): p._element.remove(ch)
+def mkp(c, txt, sz=8.5, bd=False, clr=None, sb=0, sa=1.5, al=0):
+    if clr is None: clr = RGBColor(0x33,0x33,0x33)
+    p = c.add_paragraph(); p.alignment = al
+    p.paragraph_format.space_before = Pt(sb); p.paragraph_format.space_after = Pt(sa)
+    p.paragraph_format.line_spacing = 1.08
+    r = p.add_run(txt); sf(r, sz=sz, bd=bd, clr=clr); return p
+def tr(c, txt, sz=10, clr=None):
+    if clr is None: clr = RGBColor(0x0F,0x1B,0x2D)
+    clr_cell(c); p = c.paragraphs[0]
+    p.paragraph_format.space_before = Pt(3); p.paragraph_format.space_after = Pt(2)
+    p.paragraph_format.line_spacing = 1.1; r = p.add_run(txt); sf(r, sz=sz, bd=True, clr=clr)
+def aln(c):
+    p = c.add_paragraph(); p.paragraph_format.space_before = Pt(0); p.paragraph_format.space_after = Pt(2)
+    pPr = p._element.get_or_add_pPr()
+    pPr.append(parse_xml('<w:pBdr %s><w:bottom w:val="single" w:sz="6" w:space="1" w:color="D4A373"/></w:pBdr>' % nsdecls("w")))
+def bul(c, txt, sz=8):
+    p = c.add_paragraph(); p.paragraph_format.space_before = Pt(0); p.paragraph_format.space_after = Pt(0.5); p.paragraph_format.line_spacing = 1.08
+    pPr = p._element.get_or_add_pPr(); pPr.append(parse_xml('<w:ind %s w:left="180" w:hanging="100"/>' % nsdecls("w")))
+    rb = p.add_run("\u2022 "); sf(rb, sz=sz-1, clr=RGBColor(0xD4,0xA3,0x73))
+    rt = p.add_run(txt); sf(rt, sz=sz, clr=RGBColor(0x33,0x33,0x33))
+def il(c, lb, vl):
+    p = c.add_paragraph(); p.paragraph_format.space_before = Pt(1.5); p.paragraph_format.space_after = Pt(1); p.paragraph_format.line_spacing = 1.08
+    rl = p.add_run(lb); sf(rl, sz=8, bd=True, clr=RGBColor(0x99,0x99,0x99))
+    rv = p.add_run(vl); sf(rv, sz=8.5, clr=RGBColor(0x33,0x33,0x33))
+def dl(c, its, sep="    "):
+    p = c.add_paragraph(); p.paragraph_format.space_before = Pt(1); p.paragraph_format.space_after = Pt(0.5); p.paragraph_format.line_spacing = 1.08
+    for i, (t, b) in enumerate(its):
+        r = p.add_run(t); sf(r, sz=8.5, bd=b, clr=RGBColor(0x33,0x33,0x33))
+        if i < len(its)-1: rs = p.add_run(sep); sf(rs, sz=7.5, clr=RGBColor(0xD4,0xA3,0x73))
+doc = Document()
+for s in doc.sections:
+    s.top_margin = Cm(1.2); s.bottom_margin = Cm(1.2); s.left_margin = Cm(1.5); s.right_margin = Cm(1.5)
+W = [Inches(2.3), Inches(4.3)]
+tbl = doc.add_table(rows=1, cols=2); tbl.autofit = False
+t = tbl._tbl
+tg = parse_xml('<w:tblGrid %s><w:gridCol w:w="%d"/><w:gridCol w:w="%d"/></w:tblGrid>' % (nsdecls("w"), int(W[0].emu/635), int(W[1].emu/635)))
+t.tblPr.insert(0, tg)
+nb = parse_xml('<w:tblBorders %s><w:top w:val="none" w:sz="0"/><w:bottom w:val="none" w:sz="0"/><w:left w:val="none" w:sz="0"/><w:right w:val="none" w:sz="0"/><w:insideH w:val="none" w:sz="0"/><w:insideV w:val="none" w:sz="0"/></w:tblBorders>' % nsdecls("w"))
+t.tblPr.append(nb)
+ACC = RGBColor(0xD4,0xA3,0x73); NAV = RGBColor(0x0F,0x1B,0x2D); BDY = RGBColor(0x33,0x33,0x33)
+cl = tbl.cell(0,0); cr = tbl.cell(0,1)
+bg(cl,"#F5F0EB"); mg(cl,t=50,b=30,s=90,e=80)
+clr_cell(cl); p = cl.paragraphs[0]; p.alignment=1; p.paragraph_format.space_after=Pt(0)
+rn = p.add_run("南希"); sf(rn,sz=22,bd=True,clr=RGBColor(0x1A,0x14,0x10))
+p2 = cl.add_paragraph(); p2.alignment=1; p2.paragraph_format.space_before=Pt(1); p2.paragraph_format.space_after=Pt(0)
+r2 = p2.add_run("品牌传播 / PR 实习生"); sf(r2,sz=9,bd=True,clr=ACC)
+a = cl.add_paragraph(); a.paragraph_format.space_before=Pt(1); a.paragraph_format.space_after=Pt(4)
+pPr = a._element.get_or_add_pPr()
+pPr.append(parse_xml('<w:pBdr %s><w:bottom w:val="single" w:sz="8" w:space="1" w:color="D4A373"/></w:pBdr>' % nsdecls("w")))
+mkp(cl,"基本信息",sz=9.5,bd=True,clr=NAV,sb=6,sa=2)
+il(cl,"电话：","138-XXXX-XXXX")
+il(cl,"邮箱：","nancy.dmt@email.com")
+il(cl,"学历：","数字媒体技术 · 本科 · 2027届")
+il(cl,"GPA：","3.7 / 4.0")
+il(cl,"意向城市：","上海 / 杭州")
+mkp(cl,"相关技能",sz=9.5,bd=True,clr=NAV,sb=8,sa=2)
+for L,V in [("内容制作：","熟练使用 Premiere Pro、剪映完成视频剪辑与包装，具备 AE 动效基础"),("视觉审美：","掌握 Blender 三维建模与写实渲染，具备品牌级视觉内容制作能力"),("办公软件：","熟练使用 PPT、Excel、Word；可独立制作高质量方案演示"),("语言能力：","英语六级（备考雅思），良好的英语读写与沟通能力，普通话二甲"),("其 他：","团队协调、项目统筹、客户沟通、跨文化交流")]:
+    p=cl.add_paragraph(); p.paragraph_format.space_before=Pt(1.5); p.paragraph_format.space_after=Pt(0.5); p.paragraph_format.line_spacing=1.08
+    rl=p.add_run(L); sf(rl,sz=8,bd=True,clr=BDY); rv=p.add_run(V); sf(rv,sz=8,clr=BDY)
+mkp(cl,"技能证书",sz=9.5,bd=True,clr=NAV,sb=8,sa=2)
+for t in ["大学英语六级（CET-6）","普通话二级甲等","雅思备考中"]: bul(cl,t)
+mkp(cl,"竞赛经历",sz=9.5,bd=True,clr=NAV,sb=8,sa=2)
+for t in ["全国服务外包大赛 · 省一等奖","全国计算机设计大赛 · 省三等奖","挑战杯课外学术科技竞赛 · 省三等奖","校虚拟交互项目大赛 · 二等奖"]: bul(cl,t)
+mg(cr,t=30,b=25,s=90,e=70)
+tr(cr,"教育经历"); aln(cr)
+dl(cr,[("2023.09 – 2027.06",True),("【学校名称】",False),("数字媒体技术 / 本科",False)])
+bul(cr,"GPA 3.7/4.0，核心课程：品牌传播、交互设计、数字视频制作、计算机图形学、视觉传达设计",sz=8.5)
+tr(cr,"项目经历"); aln(cr)
+dl(cr,[("品牌纪录短片制作",True),("Premiere Pro · 2026",False)])
+bul(cr,"独立完成 3 分钟品牌纪录短片全流程制作：创意策划、拍摄协调、后期剪辑、多机位调色与动态图形设计")
+bul(cr,"与客户团队紧密配合，确保视觉叙事与品牌调性高度一致，交付适配 4 个平台的优化版本")
+dl(cr,[("美妆短视频内容创作",True),("Premiere Pro · CapCut · 2026",False)])
+bul(cr,"制作 15 条美妆推广短视频（30–60 秒），负责内容策划、快节奏剪辑、品牌统一调色与多平台适配")
+bul(cr,"深入了解社交媒体传播趋势，内容覆盖抖音、Instagram Reels 及电商平台，具备平台运营思维")
+dl(cr,[("3D 产品视觉化项目",True),("Blender · 2026",False)])
+bul(cr,"使用 Blender 完成 12 件高端化妆品产品建模与写实渲染，攻克玻璃反射、金属质感等材质难点")
+bul(cr,"交付 20+ 张品牌级产品渲染图，用于品牌方案展示与社交媒体传播素材")
+tr(cr,"在校经历"); aln(cr)
+dl(cr,[("2023.09 – 至今",True),("班级班长",False)])
+bul(cr,'负责班级日常管理与活动组织，协调跨部门事务，获评\u201c优秀学生干部\u201d\u201c优秀团干\u201d')
+dl(cr,[("志愿与实践",True)])
+bul(cr,'\u201c返家乡\u201d 志愿活动优秀志愿者，负责家乡文化主题 Vlog 拍摄与剪辑')
+tr(cr,"自我评价"); aln(cr)
+mkp(cr,"数字媒体技术专业本科，具备品牌视觉内容制作与项目统筹经验。熟练掌握视频剪辑（PR、剪映）、视觉设计工具及 PPT/Excel 等办公软件，具备良好的审美能力与英语沟通能力（六级备考雅思）。对美妆/品牌传播行业充满热情，学习能力强、严谨负责，拥有丰富的团队协作与跨职能协调经验。",sz=8.5,sb=1,sa=2)
+doc.save(OUT)
+print("Saved: " + OUT)
+from docx.shared import Pt, Inches, Cm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn, nsdecls
+from docx.oxml import parse_xml
+OUT = "D:/Users/27973/Documents/作品集/南希_品牌传播实习生_中文简历.docx"
+def sf(rn, sz=9.5, bd=False, clr=None):
+    if clr is None: clr = RGBColor(0x33,0x33,0x33)
+    rn.font.name = "Calibri"; rn.font.size = Pt(sz); rn.font.bold = bd; rn.font.color.rgb = clr
+    rpr = rn._element.get_or_add_rPr()
+    rf = rpr.find(qn("w:rFonts"))
+    if rf is None:
+        rf = parse_xml('<w:rFonts %s />' % nsdecls("w"))
+        rpr.insert(0, rf)
+    rf.set(qn("w:ascii"), "Calibri"); rf.set(qn("w:hAnsi"), "Calibri"); rf.set(qn("w:eastAsia"), "Microsoft YaHei")
+def bg(c, cl): tcPr = c._tc.get_or_add_tcPr(); tcPr.append(parse_xml('<w:shd %s w:fill="%s" w:val="clear"/>' % (nsdecls("w"), cl)))
+def mg(c, t=15, b=15, s=80, e=80):
+    tcPr = c._tc.get_or_add_tcPr()
+    tcPr.append(parse_xml('<w:tcMar %s><w:top w:w="%d" w:type="dxa"/><w:bottom w:w="%d" w:type="dxa"/><w:start w:w="%d" w:type="dxa"/><w:end w:w="%d" w:type="dxa"/></w:tcMar>' % (nsdecls("w"), t, b, s, e)))
+def clr(c):
+    p = c.paragraphs[0]
+    for r in list(p.runs): r._element.getparent().remove(r._element)
+    for ch in list(p._element): p._element.remove(ch)
+def mkp(c, txt, sz=8.5, bd=False, clr=None, sb=0, sa=1.5, al=0):
+    if clr is None: clr = RGBColor(0x33,0x33,0x33)
+    p = c.add_paragraph(); p.alignment = al
+    p.paragraph_format.space_before = Pt(sb); p.paragraph_format.space_after = Pt(sa)
+    p.paragraph_format.line_spacing = 1.08
+    r = p.add_run(txt); sf(r, sz=sz, bd=bd, clr=clr); return p
+def tr(c, txt, sz=10, clr=None):
+    if clr is None: clr = RGBColor(0x0F,0x1B,0x2D)
+    clr(c); p = c.paragraphs[0]
+    p.paragraph_format.space_before = Pt(3); p.paragraph_format.space_after = Pt(2)
+    p.paragraph_format.line_spacing = 1.1; r = p.add_run(txt); sf(r, sz=sz, bd=True, clr=clr)
+def aln(c):
+    p = c.add_paragraph(); p.paragraph_format.space_before = Pt(0); p.paragraph_format.space_after = Pt(2)
+    pPr = p._element.get_or_add_pPr()
+    pPr.append(parse_xml('<w:pBdr %s><w:bottom w:val="single" w:sz="6" w:space="1" w:color="D4A373"/></w:pBdr>' % nsdecls("w")))
+def bul(c, txt, sz=8):
+    p = c.add_paragraph(); p.paragraph_format.space_before = Pt(0); p.paragraph_format.space_after = Pt(0.5); p.paragraph_format.line_spacing = 1.08
+    pPr = p._element.get_or_add_pPr(); pPr.append(parse_xml('<w:ind %s w:left="180" w:hanging="100"/>' % nsdecls("w")))
+    rb = p.add_run("\u2022 "); sf(rb, sz=sz-1, clr=RGBColor(0xD4,0xA3,0x73))
+    rt = p.add_run(txt); sf(rt, sz=sz, clr=RGBColor(0x33,0x33,0x33))
+def il(c, lb, vl):
+    p = c.add_paragraph(); p.paragraph_format.space_before = Pt(1.5); p.paragraph_format.space_after = Pt(1); p.paragraph_format.line_spacing = 1.08
+    rl = p.add_run(lb); sf(rl, sz=8, bd=True, clr=RGBColor(0x99,0x99,0x99))
+    rv = p.add_run(vl); sf(rv, sz=8.5, clr=RGBColor(0x33,0x33,0x33))
+def dl(c, its, sep="    "):
+    p = c.add_paragraph(); p.paragraph_format.space_before = Pt(1); p.paragraph_format.space_after = Pt(0.5); p.paragraph_format.line_spacing = 1.08
+    for i, (t, b) in enumerate(its):
+        r = p.add_run(t); sf(r, sz=8.5, bd=b, clr=RGBColor(0x33,0x33,0x33))
+        if i < len(its)-1: rs = p.add_run(sep); sf(rs, sz=7.5, clr=RGBColor(0xD4,0xA3,0x73))
+doc = Document()
+for s in doc.sections:
+    s.top_margin = Cm(1.2); s.bottom_margin = Cm(1.2); s.left_margin = Cm(1.5); s.right_margin = Cm(1.5)
+W = [Inches(2.3), Inches(4.3)]
+tbl = doc.add_table(rows=1, cols=2); tbl.autofit = False
+t = tbl._tbl
+tg = parse_xml('<w:tblGrid %s><w:gridCol w:w="%d"/><w:gridCol w:w="%d"/></w:tblGrid>' % (nsdecls("w"), int(W[0].emu/635), int(W[1].emu/635)))
+t.tblPr.insert(0, tg)
+nb = parse_xml('<w:tblBorders %s><w:top w:val="none" w:sz="0"/><w:bottom w:val="none" w:sz="0"/><w:left w:val="none" w:sz="0"/><w:right w:val="none" w:sz="0"/><w:insideH w:val="none" w:sz="0"/><w:insideV w:val="none" w:sz="0"/></w:tblBorders>' % nsdecls("w"))
+t.tblPr.append(nb)
+ACC = RGBColor(0xD4,0xA3,0x73); NAV = RGBColor(0x0F,0x1B,0x2D); BDY = RGBColor(0x33,0x33,0x33)
+cl = tbl.cell(0,0); cr = tbl.cell(0,1)
+bg(cl,"#F5F0EB"); mg(cl,t=50,b=30,s=90,e=80)
+clr(cl); p = cl.paragraphs[0]; p.alignment=1; p.paragraph_format.space_after=Pt(0)
+rn = p.add_run("\u5357\u5E0C"); sf(rn,sz=22,bd=True,clr=RGBColor(0x1A,0x14,0x10))
+p2 = cl.add_paragraph(); p2.alignment=1; p2.paragraph_format.space_before=Pt(1); p2.paragraph_format.space_after=Pt(0)
+r2 = p2.add_run("\u54C1\u724C\u4F20\u64AD / PR \u5B9E\u4E60\u751F"); sf(r2,sz=9,bd=True,clr=ACC)
+a = cl.add_paragraph(); a.paragraph_format.space_before=Pt(1); a.paragraph_format.space_after=Pt(4)
+pPr = a._element.get_or_add_pPr()
+pPr.append(parse_xml('<w:pBdr %s><w:bottom w:val="single" w:sz="8" w:space="1" w:color="D4A373"/></w:pBdr>' % nsdecls("w")))
+mkp(cl,"\u57FA\u672C\u4FE1\u606F",sz=9.5,bd=True,clr=NAV,sb=6,sa=2)
+il(cl,"\u7535\u8BDD\uFF1A","138-XXXX-XXXX")
+il(cl,"\u90AE\u7BB1\uFF1A","nancy.dmt@email.com")
+il(cl,"\u5B66\u5386\uFF1A","\u6570\u5B57\u5A92\u4F53\u6280\u672F \u00B7 \u672C\u79D1 \u00B7 2027\u5C4A")
+il(cl,"GPA\uFF1A","3.7 / 4.0")
+il(cl,"\u610F\u5411\u57CE\u5E02\uFF1A","\u4E0A\u6D77 / \u676D\u5DDE")
+mkp(cl,"\u76F8\u5173\u6280\u80FD",sz=9.5,bd=True,clr=NAV,sb=8,sa=2)
+for L,V in [("\u5185\u5BB9\u5236\u4F5C\uFF1A","\u719F\u7EC3\u4F7F\u7528 Premiere Pro\u3001\u526A\u8F6F\u5B8C\u6210\u89C6\u9891\u526A\u8F91\u4E0E\u5305\u88C5\uFF0C\u5177\u5907 AE \u52A8\u6548\u57FA\u7840"),("\u89C6\u89C9\u5BA1\u7F8E\uFF1A","\u638C\u63E1 Blender \u4E09\u7EF4\u5EFA\u6A21\u4E0E\u5199\u5B9E\u6E32\u67D3\uFF0C\u5177\u5907\u54C1\u724C\u7EA7\u89C6\u89C9\u5185\u5BB9\u5236\u4F5C\u80FD\u529B"),("\u529E\u516C\u8F6F\u4EF6\uFF1A","\u719F\u7EC3\u4F7F\u7528 PPT\u3001Excel\u3001Word\uFF1B\u53EF\u72EC\u7ACB\u5236\u4F5C\u9AD8\u8D28\u91CF\u65B9\u6848\u6F14\u793A"),("\u8BED\u8A00\u80FD\u529B\uFF1A","\u82F1\u8BED\u516D\u7EA7\uFF08\u5907\u8003\u96C5\u601D\uFF09\uFF0C\u826F\u597D\u7684\u82F1\u8BED\u8BFB\u5199\u4E0E\u6C9F\u901A\u80FD\u529B\uFF0C\u666E\u901A\u8BDD\u4E8C\u7532"),("\u5176 \u4ED6\uFF1A","\u56E2\u961F\u534F\u8C03\u3001\u9879\u76EE\u7EDF\u7B79\u3001\u5BA2\u6237\u6C9F\u901A\u3001\u8DE8\u6587\u5316\u4EA4\u6D41")]:
+    p=cl.add_paragraph(); p.paragraph_format.space_before=Pt(1.5); p.paragraph_format.space_after=Pt(0.5); p.paragraph_format.line_spacing=1.08
+    rl=p.add_run(L); sf(rl,sz=8,bd=True,clr=BDY); rv=p.add_run(V); sf(rv,sz=8,clr=BDY)
+mkp(cl,"\u6280\u80FD\u8BC1\u4E66",sz=9.5,bd=True,clr=NAV,sb=8,sa=2)
+for t in ["\u5927\u5B66\u82F1\u8BED\u516D\u7EA7\uFF08CET-6\uFF09","\u666E\u901A\u8BDD\u4E8C\u7EA7\u7532\u7B49","\u96C5\u601D\u5907\u8003\u4E2D"]: bul(cl,t)
+mkp(cl,"\u7ADE\u8D5B\u7ECF\u5386",sz=9.5,bd=True,clr=NAV,sb=8,sa=2)
+for t in ["\u5168\u56FD\u670D\u52A1\u5916\u5305\u5927\u8D5B \u00B7 \u7701\u4E00\u7B49\u5956","\u5168\u56FD\u8BA1\u7B97\u673A\u8BBE\u8BA1\u5927\u8D5B \u00B7 \u7701\u4E09\u7B49\u5956","\u6311\u6218\u676F\u8BFE\u5916\u5B66\u672F\u79D1\u6280\u7ADE\u8D5B \u00B7 \u7701\u4E09\u7B49\u5956","\u6821\u5BA4\u5916\u865A\u62DF\u4EA4\u4E92\u9879\u76EE\u5927\u8D5B \u00B7 \u4E8C\u7B49\u5956"]: bul(cl,t)
+mg(cr,t=30,b=25,s=90,e=70)
+tr(cr,"\u6559\u80B2\u7ECF\u5386"); aln(cr)
+dl(cr,[("2023.09 \u2013 2027.06",True),("\u3010\u5B66\u6821\u540D\u79F0\u3011",False),("\u6570\u5B57\u5A92\u4F53\u6280\u672F / \u672C\u79D1",False)])
+bul(cr,"GPA 3.7/4.0\uFF0C\u6838\u5FC3\u8BFE\u7A0B\uFF1A\u54C1\u724C\u4F20\u64AD\u3001\u4EA4\u4E92\u8BBE\u8BA1\u3001\u6570\u5B57\u89C6\u9891\u5236\u4F5C\u3001\u8BA1\u7B97\u673A\u56FE\u5F62\u5B66\u3001\u89C6\u89C9\u4F20\u8FBE\u8BBE\u8BA1",sz=8.5)
+tr(cr,"\u9879\u76EE\u7ECF\u5386"); aln(cr)
+dl(cr,[("\u54C1\u724C\u7EAA\u5F55\u77ED\u7247\u5236\u4F5C",True),("Premiere Pro \u00B7 2026",False)])
+bul(cr,"\u72EC\u7ACB\u5B8C\u6210 3 \u5206\u949F\u54C1\u724C\u7EAA\u5F55\u77ED\u7247\u5168\u6D41\u7A0B\u5236\u4F5C\uFF1A\u521B\u610F\u7B56\u5212\u3001\u62CD\u6444\u534F\u8C03\u3001\u540E\u671F\u526A\u8F91\u3001\u591A\u673A\u4F4D\u8C03\u8272\u4E0E\u52A8\u6001\u56FE\u5F62\u8BBE\u8BA1")
+bul(cr,"\u4E0E\u5BA2\u6237\u56E2\u961F\u7D27\u5BC6\u914D\u5408\uFF0C\u786E\u4FDD\u89C6\u89C9\u53D9\u4E8B\u4E0E\u54C1\u724C\u8C03\u6027\u9AD8\u5EA6\u4E00\u81F4\uFF0C\u4EA4\u4ED8\u9002\u914D 4 \u4E2A\u5E73\u53F0\u7684\u4F18\u5316\u7248\u672C")
+dl(cr,[("\u7F8E\u5986\u77ED\u89C6\u9891\u5185\u5BB9\u521B\u4F5C",True),("Premiere Pro \u00B7 CapCut \u00B7 2026",False)])
+bul(cr,"\u5236\u4F5C 15 \u6761\u7F8E\u5986\u63A8\u5E7F\u77ED\u89C6\u9891\uFF0830\u201360 \u79D2\uFF09\uFF0C\u8D1F\u8D23\u5185\u5BB9\u7B56\u5212\u3001\u5FEB\u8282\u594F\u526A\u8F91\u3001\u54C1\u724C\u7EDF\u4E00\u8C03\u8272\u4E0E\u591A\u5E73\u53F0\u9002\u914D")
+bul(cr,"\u6DF1\u5165\u4E86\u89E3\u793E\u4EA4\u5A92\u4F53\u4F20\u64AD\u8D8B\u52BF\uFF0C\u5185\u5BB9\u8986\u76D6\u6296\u97F3\u3001Instagram Reels \u53CA\u7535\u5546\u5E73\u53F0\uFF0C\u5177\u5907\u5E73\u53F0\u8FD0\u8425\u601D\u7EF4")
+dl(cr,[("3D \u4EA7\u54C1\u89C6\u89C9\u5316\u9879\u76EE",True),("Blender \u00B7 2026",False)])
+bul(cr,"\u4F7F\u7528 Blender \u5B8C\u6210 12 \u4EF6\u9AD8\u7AEF\u5316\u5986\u54C1\u4EA7\u54C1\u5EFA\u6A21\u4E0E\u5199\u5B9E\u6E32\u67D3\uFF0C\u653B\u514B\u73BB\u7483\u53CD\u5C04\u3001\u91D1\u5C5E\u8D28\u611F\u7B49\u6750\u8D28\u96BE\u70B9")
+bul(cr,"\u4EA4\u4ED8 20+ \u5F20\u54C1\u724C\u7EA7\u4EA7\u54C1\u6E32\u67D3\u56FE\uFF0C\u7528\u4E8E\u54C1\u724C\u65B9\u6848\u5C55\u793A\u4E0E\u793E\u4EA4\u5A92\u4F53\u4F20\u64AD\u7D20\u6750")
+tr(cr,"\u5728\u6821\u7ECF\u5386"); aln(cr)
+dl(cr,[("2023.09 \u2013 \u81F3\u4ECA",True),("\u73ED\u7EA7\u73ED\u957F",False)])
+bul(cr,"\u8D1F\u8D23\u73ED\u7EA7\u65E5\u5E38\u7BA1\u7406\u4E0E\u6D3B\u52A8\u7EC4\u7EC7\uFF0C\u534F\u8C03\u8DE8\u90E8\u95E8\u4E8B\u52A1\uFF0C\u83B7\u8BC4\u201C\u4F18\u79C0\u5B66\u751F\u5E72\u90E8\u201D\u201C\u4F18\u79C0\u56E2\u5E72\u201D")
+dl(cr,[("\u5FD7\u613F\u4E0E\u5B9E\u8DF5",True)])
+bul(cr,"\u201C\u8FD4\u5BB6\u4E61\u201D\u5FD7\u613F\u6D3B\u52A8\u4F18\u79C0\u5FD7\u613F\u8005\uFF0C\u8D1F\u8D23\u5BB6\u4E61\u6587\u5316\u4E3B\u9898 Vlog \u62CD\u6444\u4E0E\u526A\u8F91")
+tr(cr,"\u81EA\u6211\u8BC4\u4EF7"); aln(cr)
+mkp(cr,"\u6570\u5B57\u5A92\u4F53\u6280\u672F\u4E13\u4E1A\u672C\u79D1\uFF0C\u5177\u5907\u54C1\u724C\u89C6\u89C9\u5185\u5BB9\u5236\u4F5C\u4E0E\u9879\u76EE\u7EDF\u7B79\u7ECF\u9A8C\u3002\u719F\u7EC3\u638C\u63E1\u89C6\u9891\u526A\u8F91\uFF08PR\u3001\u526A\u8F6F\uFF09\u3001\u89C6\u89C9\u8BBE\u8BA1\u5DE5\u5177\u53CA PPT/Excel \u7B49\u529E\u516C\u8F6F\u4EF6\uFF0C\u5177\u5907\u826F\u597D\u7684\u5BA1\u7F8E\u80FD\u529B\u4E0E\u82F1\u8BED\u6C9F\u901A\u80FD\u529B\uFF08\u516D\u7EA7\u5907\u8003\u96C5\u601D\uFF09\u3002\u5BF9\u7F8E\u5986/\u54C1\u724C\u4F20\u64AD\u884C\u4E1A\u5145\u6EE1\u70ED\u60C5\uFF0C\u5B66\u4E60\u80FD\u529B\u5F3A\u3001\u4E25\u8C28\u8D1F\u8D23\uFF0C\u62E5\u6709\u4E30\u5BCC\u7684\u56E2\u961F\u534F\u4F5C\u4E0E\u8DE8\u804C\u80FD\u534F\u8C03\u7ECF\u9A8C\u3002",sz=8.5,sb=1,sa=2)
+doc.save(OUT)
+print("Saved: " + OUT)
